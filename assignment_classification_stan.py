@@ -26,9 +26,11 @@ def get_filenames_in_folder(folder):
 def read_files(categories):
     feats = list()
     print("\n##### Reading files...")
-    for category in categories:
-        data = open('data/data.csv', 'r', encoding='UTF-8').read()
-        data = data.lower()
+    data = open('data/data.csv', 'r', encoding='UTF-8').read()
+    for line in data:
+        sentence = line.split(',')
+        category = sentence[1]
+        data = sentence[0].lower()
         tokens = word_tokenize(data)
         punct = set(string.punctuation)
         for item in tokens:
@@ -37,12 +39,12 @@ def read_files(categories):
             else:
                 pass
         bag = bag_of_non_stopwords(tokens)
-
         feats.append((bag, category))
-        # print len(tokens)
-        num_files += 1
-        # if num_files>=50: # you may want to de-comment this and the next line if you're doing tests (it just loads N documents instead of the whole collection so it runs faster
-        # break
+
+    # print len(tokens)
+    num_files += 1
+    # if num_files>=50: # you may want to de-comment this and the next line if you're doing tests (it just loads N documents instead of the whole collection so it runs faster
+    # break
 
     print("  Category %s, %i files read" % (category, num_files))
 
