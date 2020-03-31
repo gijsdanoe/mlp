@@ -2,7 +2,6 @@
 
 # Basic classifiction functionality with naive Bayes. File provided for the assignment on classification (IR course 2019/20)
 
-
 import nltk.classify
 from nltk.tokenize import word_tokenize
 from featx import bag_of_words, high_information_words, bag_of_non_stopwords, bag_of_words_in_set
@@ -16,6 +15,7 @@ from os import listdir  # to read files
 from os.path import isfile, join  # to read files
 import sys
 
+import pandas as pd
 
 # return all the filenames in a folder
 def get_filenames_in_folder(folder):
@@ -23,11 +23,14 @@ def get_filenames_in_folder(folder):
 
 
 # reads all the files that correspond to the input list of categories and puts their contents in bags of words
-def read_files(categories):
+def read_files():
     feats = list()
     print("\n##### Reading files...")
-    data = open('data/data.csv', 'r', encoding='UTF-8').read()
-    for line in data:
+    csvfile = open('data/data.csv', 'r', encoding='UTF-8').readlines()
+    df = pd.read_csv('data/data.csv', index_col = 0, skiprows=1).to_dict()
+    breakpoint()
+    for line in df:
+        print(line)
         sentence = line.split(',')
         category = sentence[1]
         data = sentence[0].lower()
@@ -193,13 +196,14 @@ def high_info_feats(feats, high_info_words):
 
 def main():
     # read categories from arguments. e.g. "python3 assignment_classification.py BINNENLAND SPORT KUNST"
-    categories = list()
-    for arg in sys.argv[1:]:
-        categories.append(arg)
+    categories = ['theonion', 'nottheonion']
+    #for arg in sys.argv[1:]:
+        #categories.append(arg)
 
     # load categories from dataset
 
-    feats = read_files(categories)
+    feats = read_files()
+    breakpoint()
     highinfo = high_information(feats, categories)
     highinfo_feats = high_info_feats(feats, highinfo)
 
