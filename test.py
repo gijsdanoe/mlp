@@ -7,9 +7,9 @@ def read_files():
     csvlist = list()
     for line in csvfile:
         line = line.strip('"')
-        itemtuple = (line[-2], str(line[:-3]))
+        itemtuple = (str(line[:-3]), line[-2])
         csvlist.append(itemtuple)
-    print(csvlist)
+
     #df = pd.read_csv('data/data.csv', index_col = 0, skiprows=1).dict()
     #for sentence,category in df:
         #print(f"{sentence} {row}")

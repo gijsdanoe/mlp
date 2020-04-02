@@ -17,23 +17,14 @@ import sys
 
 import pandas as pd
 
-# return all the filenames in a folder
-def get_filenames_in_folder(folder):
-    return [f for f in listdir(folder) if isfile(join(folder, f))]
 
-
-# reads all the files that correspond to the input list of categories and puts their contents in bags of words
 def read_files():
+    csvfile = open('OnionOrNot.csv', 'r', encoding='UTF-8').readlines()
     feats = list()
-    print("\n##### Reading files...")
-    csvfile = open('data/data.csv', 'r', encoding='UTF-8').readlines()
-    df = pd.read_csv('data/data.csv', index_col = 0, skiprows=1).to_dict()
-    breakpoint()
-    for line in df:
-        print(line)
-        sentence = line.split(',')
-        category = sentence[1]
-        data = sentence[0].lower()
+    for line in csvfile:
+        line = line.strip('"')
+        data = str(line[:-3])
+        category = line[-2].lower()
         tokens = word_tokenize(data)
         punct = set(string.punctuation)
         for item in tokens:
@@ -44,14 +35,6 @@ def read_files():
         bag = bag_of_non_stopwords(tokens)
         feats.append((bag, category))
 
-    # print len(tokens)
-    num_files += 1
-    # if num_files>=50: # you may want to de-comment this and the next line if you're doing tests (it just loads N documents instead of the whole collection so it runs faster
-    # break
-
-    print("  Category %s, %i files read" % (category, num_files))
-
-    print("  Total, %i files read" % (len(feats)))
     return feats
 
 
@@ -70,30 +53,6 @@ def split_train_test(feats, split=0.9):
     print("  Test set: %i" % len(test_feats))
     return train_feats, test_feats
 
-
-# TODO function to split the dataset for n fold cross validation
-def split_folds(feats, folds=10):
-    shuffle(feats)  # randomise dataset before splitting into train and test
-
-    # divide feats into n cross fold sections
-    nfold_feats = []
-    # l = int(len(feats)/folds)
-    l = len(feats)
-    for n in range(folds):
-        # TODO for each fold you need 1/n of the dataset as test and the rest as training
-
-        # test_feats = feats[int(n*l):][:int(n+1)*l]
-        # train_feats = feats[:int(n*l)] + feats[int((n+1)*l):]
-        teststart = round(n * (l / folds))
-        testend = round((n + 1) * (l / folds))
-        train_feats = feats[:teststart] + feats[testend:]
-        test_feats = feats[teststart:testend]
-        nfold_feats.append((train_feats, test_feats))
-
-    print("\n##### Splitting datasets...")
-    return nfold_feats
-
-
 # trains a classifier
 def train(train_feats):
     classifier = nltk.classify.SklearnClassifier(LinearSVC(C=100))  # linear
@@ -103,9 +62,6 @@ def train(train_feats):
     return classifier
 
 
-# the following code uses the classifier with add-1 smoothing (Laplace)
-# You may choose to use that instead
-# from nltk.probability import LaplaceProbDist
 # classifier = nltk.classify.NaiveBayesClassifier.train(train_feats, estimator=LaplaceProbDist)
 
 
@@ -141,11 +97,6 @@ def evaluation(classifier, test_feats, categories):
 
     print(" |-----------|-----------|-----------|-----------|")
 
-
-# show informative features
-def analysis(classifier):
-    print("\n##### Analysis...")
-    print(classifier.show_most_informative_features(10))
 
 
 # obtain the high information words
@@ -195,15 +146,9 @@ def high_info_feats(feats, high_info_words):
 
 
 def main():
-    # read categories from arguments. e.g. "python3 assignment_classification.py BINNENLAND SPORT KUNST"
-    categories = ['theonion', 'nottheonion']
-    #for arg in sys.argv[1:]:
-        #categories.append(arg)
-
-    # load categories from dataset
 
     feats = read_files()
-    breakpoint()
+    print(feats)
     highinfo = high_information(feats, categories)
     highinfo_feats = high_info_feats(feats, highinfo)
 
