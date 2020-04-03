@@ -21,8 +21,8 @@ def read_files():
     feats = list()
     for line in csvfile:
         line = line.strip('"')
-        data = str(line[:-3])
-        category = line[-2].lower()
+        data = str(line[:-3]).lower()
+        category = line[-2]
         tokens = word_tokenize(data)
         punct = set(string.punctuation)
         for item in tokens:
@@ -109,7 +109,7 @@ def main():
     highinfo_feats = high_info_feats(feats, highinfo)
     for item in highinfo_feats:
         print(item)
-    train_feats, dev_feats, test_feats = split_data(feats)
+    train_feats, dev_feats, test_feats = split_data(highinfo_feats)
 
     classifier = train(train_feats)
     score = nltk.classify.accuracy(classifier, test_feats)
