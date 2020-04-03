@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-# Basic classifiction functionality with naive Bayes. File provided for the assignment on classification (IR course 2019/20)
-
 import nltk.classify
 from nltk.tokenize import word_tokenize
 from featx import bag_of_words, high_information_words, bag_of_non_stopwords, bag_of_words_in_set
@@ -39,30 +37,24 @@ def read_files():
 
 
 # splits a labelled dataset into two disjoint subsets train and test
-def split_train_test(feats, split=0.9):
-    train_feats = []
-    test_feats = []
-    # print (feats[0])
-
+def split_data(feats):
     shuffle(feats)  # randomise dataset before splitting into train and test
-    cutoff = int(len(feats) * split)
-    train_feats, test_feats = feats[:cutoff], feats[cutoff:]
+    split_1 = int(0.8 * len(feats))
+    split_2 = int(0.9 * len(feats))
+    train_feats = feats[:split_1]
+    dev_feats = feats[split_1:split_2]
+    test_feats = feats[split_2:]
+    return train_feats, dev_feats, test_feats
 
-    print("\n##### Splitting datasets...")
-    print("  Training set: %i" % len(train_feats))
-    print("  Test set: %i" % len(test_feats))
-    return train_feats, test_feats
 
 # trains a classifier
 def train(train_feats):
     classifier = nltk.classify.SklearnClassifier(LinearSVC(C=100))  # linear
     # classifier = nltk.classify.SklearnClassifier(SVC(kernel='poly', C=100)) #poly
     # classifier = nltk.classify.SklearnClassifier(SVC(kernel='rbf', C=100)) #rbf
+    # classifier = nltk.classify.NaiveBayesClassifier.train(train_feats)
     classifier.train(train_feats)
     return classifier
-
-
-# classifier = nltk.classify.NaiveBayesClassifier.train(train_feats, estimator=LaplaceProbDist)
 
 
 def calculate_f(precisions, recalls):
@@ -75,37 +67,9 @@ def calculate_f(precisions, recalls):
     return f_measures
 
 
-# prints accuracy, precision and recall
-def evaluation(classifier, test_feats, categories):
-    print("\n##### Evaluation...")
-    print("  Accuracy: %f" % nltk.classify.accuracy(classifier, test_feats))
-
-    precisions, recalls = precision_recall(classifier, test_feats)
-
-    f_measures = calculate_f(precisions, recalls)
-    print(" |-----------|-----------|-----------|-----------|")
-    print(" |%-11s|%-11s|%-11s|%-11s|" % ("category", "precision", "recall", "F-measure"))
-    print(" |-----------|-----------|-----------|-----------|")
-    for category in categories:
-        if precisions[category] is None:
-            print(" |%-11s|%-11s|%-11s|%-11s|" % (category, "NA", "NA", "NA"))
-
-        else:
-
-            print(" |%-11s|%-11f|%-11f|%-11s|" % (
-                category, precisions[category], recalls[category], f_measures[category]))
-
-    print(" |-----------|-----------|-----------|-----------|")
-
-
-
 # obtain the high information words
 def high_information(feats, categories):
-    print("\n##### Obtaining high information words...")
 
-    labelled_words = [(category, []) for category in categories]
-
-    # 1. convert the formatting of our features to that required by high_information_words
     from collections import defaultdict
     words = defaultdict(list)
     all_words = list()
@@ -118,21 +82,12 @@ def high_information(feats, categories):
         for w in bag.keys():
             words[category].append(w)
             all_words.append(w)
-    #		break
+
 
     labelled_words = [(category, words[category]) for category in categories]
-    # print labelled_words
 
-    # 2. calculate high information words
     high_info_words = set(high_information_words(labelled_words, min_score=5))
-    # print(high_info_words)
-    # high_info_words contains a list of high-information words. You may want to use only these for classification.
-    # You can restrict the words in a bag of words to be in a given 2nd list (e.g. in function read_files)
-    # e.g. bag_of_words_in_set(words, high_info_words)
 
-    print("  Number of words in the data: %i" % len(all_words))
-    print("  Number of distinct words in the data: %i" % len(set(all_words)))
-    print("  Number of distinct 'high-information' words in the data: %i" % len(high_info_words))
 
     return high_info_words
 
@@ -146,24 +101,22 @@ def high_info_feats(feats, high_info_words):
 
 
 def main():
-
+    categories = list()
+    for arg in sys.argv[1:]:
+        categories.append(arg)
     feats = read_files()
-    print(feats)
     highinfo = high_information(feats, categories)
     highinfo_feats = high_info_feats(feats, highinfo)
+    for item in highinfo_feats:
+        print(item)
+    train_feats, dev_feats, test_feats = split_data(feats)
 
-    # train_feats, test_feats = split_train_test(feats)
+    classifier = train(train_feats)
+    score = nltk.classify.accuracy(classifier, test_feats)
+    precisions, recalls = precision_recall(classifier, test_feats)
+    f_measures = calculate_f(precisions, recalls)
+    print(score)
 
-    # TODO to use n folds you'd have to call function split_folds and have the subsequent lines inside a for loop
-    nfold_feats = split_folds(highinfo_feats)
-    scorelist = []
-    for train_feats, test_feats in nfold_feats:
-        classifier = train(train_feats)
-        scorelist.append(nltk.classify.accuracy(classifier, test_feats))
-
-    scorelist.append(sum(scorelist) / len(scorelist))
-    for score in scorelist:
-        print(score)
 
 
 if __name__ == '__main__':
