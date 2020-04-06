@@ -2,10 +2,11 @@
 
 import nltk.classify
 from nltk.tokenize import word_tokenize
-from featx import bag_of_words, high_information_words, bag_of_non_stopwords, bag_of_words_in_set
+from featx import bag_of_words, high_information_words, bag_of_non_stopwords, bag_of_words_in_set, bag_of_bigrams_words, bag_of_words_not_in_set
 from classification import precision_recall
 from nltk.classify import SklearnClassifier
 from sklearn.svm import LinearSVC, SVC
+from nltk.stem.snowball import SnowballStemmer
 import string
 
 from random import shuffle
@@ -19,6 +20,7 @@ import pandas as pd
 def read_files():
     csvfile = open('OnionOrNot.csv', 'r', encoding='UTF-8').readlines()
     feats = list()
+    bigrams = list()
     for line in csvfile:
         line = line.strip('"')
         data = str(line[:-3]).lower()
@@ -30,15 +32,17 @@ def read_files():
                 tokens.remove(item)
             else:
                 pass
-        bag = bag_of_non_stopwords(tokens)
-        feats.append((bag, category))
+        no_stop = bag_of_non_stopwords(tokens)
+        stemmer = SnowballStemmer("english")
+        filteredtokens = [stemmer.stem(filteredtoken) for filteredtoken in no_stop]
+        feats.append((bag_of_words(filteredtokens), category))
+
 
     return feats
 
 
 # splits a labelled dataset into two disjoint subsets train and test
 def split_data(feats):
-    shuffle(feats)  # randomise dataset before splitting into train and test
     split_1 = int(0.8 * len(feats))
     split_2 = int(0.9 * len(feats))
     train_feats = feats[:split_1]
@@ -57,16 +61,6 @@ def train(train_feats):
     return classifier
 
 
-def calculate_f(precisions, recalls):
-    f_measures = {}
-    for key in precisions.keys():
-        try:
-            f_measures[key] = 2 * (precisions[key] * recalls[key]) / (precisions[key] + recalls[key])
-        except:
-            f_measures[key] = 0
-    return f_measures
-
-
 # obtain the high information words
 def high_information(feats, categories):
 
@@ -79,7 +73,7 @@ def high_information(feats, categories):
     for feat in feats:
         category = feat[1]
         bag = feat[0]
-        for w in bag.keys():
+        for w in bag:
             words[category].append(w)
             all_words.append(w)
 
@@ -96,8 +90,18 @@ def high_information(feats, categories):
 def high_info_feats(feats, high_info_words):
     high_info_feats = []
     for feat in feats:
-        high_info_feats.append((bag_of_words_in_set(feat[0].keys(), high_info_words), feat[1]))
+        highinfo = bag_of_words_in_set(feat[0], high_info_words)
+        high_info_feats.append((highinfo, feat[1]))
     return high_info_feats
+
+def bigram(feats):
+    bigrams = []
+    for feat in feats:
+        bigramsandwords = bag_of_bigrams_words(list(feat[0].keys()))
+        bigram = bag_of_words_not_in_set(bigramsandwords, list(feat[0].keys()))
+        cleanbigram = list(' '.join((a, b)) for a, b in bigram)
+        bigrams.append(bag_of_words(cleanbigram))
+    return bigrams
 
 
 def main():
@@ -105,17 +109,23 @@ def main():
     for arg in sys.argv[1:]:
         categories.append(arg)
     feats = read_files()
+
+    # high information words
     highinfo = high_information(feats, categories)
     highinfo_feats = high_info_feats(feats, highinfo)
-    for item in highinfo_feats:
-        print(item)
+
+    # bigrams. works with both feats and highinfo_feats
+    bigrams = bigram(feats)
+    for i,j in zip(highinfo_feats, bigrams):
+        i[0].update(j)
+
     train_feats, dev_feats, test_feats = split_data(highinfo_feats)
 
     classifier = train(train_feats)
     score = nltk.classify.accuracy(classifier, test_feats)
-    precisions, recalls = precision_recall(classifier, test_feats)
-    f_measures = calculate_f(precisions, recalls)
+
     print(score)
+
 
 
 
