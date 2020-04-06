@@ -38,6 +38,7 @@ def read_files():
         feats.append((bag_of_words(filteredtokens), category))
 
 
+
     return feats
 
 
@@ -53,7 +54,7 @@ def split_data(feats):
 
 # trains a classifier
 def train(train_feats):
-    classifier = nltk.classify.SklearnClassifier(LinearSVC(C=100))  # linear
+    classifier = nltk.classify.SklearnClassifier(LinearSVC())  # linear
     # classifier = nltk.classify.SklearnClassifier(SVC(kernel='poly', C=100)) #poly
     # classifier = nltk.classify.SklearnClassifier(SVC(kernel='rbf', C=100)) #rbf
     # classifier = nltk.classify.NaiveBayesClassifier.train(train_feats)
@@ -119,7 +120,7 @@ def main():
     for i,j in zip(highinfo_feats, bigrams):
         i[0].update(j)
 
-    train_feats, dev_feats, test_feats = split_data(highinfo_feats)
+    train_feats, dev_feats, test_feats = split_data(feats)
 
     classifier = train(train_feats)
     score = nltk.classify.accuracy(classifier, test_feats)
