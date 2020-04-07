@@ -106,9 +106,7 @@ def bigram(feats):
 
 
 def main():
-    categories = list()
-    for arg in sys.argv[1:]:
-        categories.append(arg)
+    categories = ['0', '1']
     feats = read_files()
 
     # high information words
@@ -120,7 +118,7 @@ def main():
     for i,j in zip(highinfo_feats, bigrams):
         i[0].update(j)
 
-    train_feats, dev_feats, test_feats = split_data(feats)
+    train_feats, dev_feats, test_feats = split_data(highinfo_feats)
 
     classifier = train(train_feats)
     score = nltk.classify.accuracy(classifier, test_feats)
